@@ -1,0 +1,26 @@
+{
+  "name": "HomeEase India - Trusted Home Services",
+  "short_name": "HomeEase",
+  "description": "India's trusted home services platform - plumbers, electricians, cleaners and more at your doorstep",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ea580c",
+  "orientation": "portrait-primary",
+  "categories": ["lifestyle", "utilities"],
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}
