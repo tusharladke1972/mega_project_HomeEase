@@ -29,7 +29,9 @@ const Index = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-200">
         <Header />
         {profile.role === 'service_provider' ? (
-          <ProviderDashboard />
+          <div className="pb-20 md:pb-0">
+            <ProviderDashboard />
+          </div>
         ) : (
           <CustomerDashboard />
         )}

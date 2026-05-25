@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { clearProviderCache } from '@/lib/providerCache';
 
 interface UserProfile {
   id: string;
@@ -122,30 +123,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (session?.user) {
       setUser(session.user);
       setSession(session);
+
+      const existingProfile = await fetchProfile(session.user.id);
+      if (existingProfile) {
+        setProfile(existingProfile);
+        setLoading(false);
+        if (existingProfile.role === 'service_provider') {
+          void ensureServiceProviderRecord(session.user.id);
+        }
+        return;
+      }
+
       await ensureProfile(session);
     } else {
       setUser(null);
       setSession(null);
       setProfile(null);
+      clearProviderCache();
     }
-    
+
     setLoading(false);
   };
 
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session first
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) {
-        handleAuthStateChange(session);
-      }
-    });
-
-    // Then set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) {
-        handleAuthStateChange(session);
+        void handleAuthStateChange(session);
       }
     });
 
@@ -196,6 +201,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await supabase.auth.signOut();
       setProfile(null);
+      clearProviderCache();
     } finally {
       setLoading(false);
     }

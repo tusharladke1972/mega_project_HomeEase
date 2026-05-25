@@ -8,6 +8,7 @@ import ServiceManagement from './ServiceManagement';
 import BookingManagement from './BookingManagement';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { getProviderIdForUser } from '@/lib/providerCache';
 
 const ProviderDashboard = () => {
   const { user } = useAuth();
@@ -36,32 +37,15 @@ const ProviderDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-
-    fetchStats();
-    const intervalId = setInterval(fetchStats, 10000);
-    return () => clearInterval(intervalId);
-  }, [user]);
-
-  const getProviderId = async () => {
-    if (!user?.id) return null;
-
-    const { data, error } = await supabase
-      .from('service_providers')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (error) {
-      throw error;
+    if (user) {
+      fetchStats();
     }
-
-    return data?.id ?? null;
-  };
+  }, [user]);
 
   const fetchStats = async () => {
     try {
-      const providerId = await getProviderId();
+      if (!user?.id) return;
+      const providerId = await getProviderIdForUser(user.id);
       if (!providerId) {
         setStats({
           totalBookings: 0,

@@ -137,15 +137,7 @@ const CustomerDashboard = () => {
 
   const fetchServices = async () => {
     try {
-      const { data, error } = await (supabase as any)
-        .rpc('get_all_provider_services');
-
-      if (error) {
-        console.warn('RPC get_all_provider_services failed, using fallback query:', error.message);
-        await fetchServicesFallback();
-      } else {
-        setServices(data || []);
-      }
+      await fetchServicesFallback();
     } catch (error) {
       console.error('Error:', error);
       setServices([]);
@@ -169,7 +161,7 @@ const CustomerDashboard = () => {
     : services.filter((service) => service.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
         <div className="container mx-auto px-4 py-12">

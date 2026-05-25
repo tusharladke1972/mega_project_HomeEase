@@ -1,6 +1,13 @@
 import React from 'react';
-import { Phone, Map, Home, User, Wrench, Calendar } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { Home, User, Calendar, Activity } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import CustomerPaymentNotifier from '@/components/CustomerPaymentNotifier';
+
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `flex flex-col items-center min-w-0 flex-1 py-1 ${
+    isActive ? 'text-blue-600' : 'text-gray-500 hover:text-blue-600'
+  }`;
 
 const Footer = () => {
   const { profile } = useAuth();
@@ -8,28 +15,34 @@ const Footer = () => {
 
   return (
     <>
-      {/* Mobile App Footer Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around items-center py-2 md:hidden shadow-lg">
-        <a href="/" className="flex flex-col items-center text-blue-600 hover:text-blue-700">
-          <Home className="w-6 h-6" />
-          <span className="text-xs mt-1">Home</span>
-        </a>
-        {isProvider ? (
-          null
-        ) : (
+      {!isProvider && <CustomerPaymentNotifier />}
+      {/* Mobile bottom navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around items-center py-2 md:hidden shadow-lg safe-area-pb">
+        <NavLink to="/" end className={navLinkClass}>
+          <Home className="w-6 h-6 shrink-0" />
+          <span className="text-[10px] sm:text-xs mt-1 truncate">Home</span>
+        </NavLink>
+
+        {!isProvider && (
           <>
-            <a href="/bookings" className="flex flex-col items-center text-gray-500 hover:text-blue-600">
-              <Calendar className="w-6 h-6" />
-              <span className="text-xs mt-1">Bookings</span>
-            </a>
+            <NavLink to="/status" className={navLinkClass}>
+              <Activity className="w-6 h-6 shrink-0" />
+              <span className="text-[10px] sm:text-xs mt-1 truncate">Status</span>
+            </NavLink>
+            <NavLink to="/bookings" className={navLinkClass}>
+              <Calendar className="w-6 h-6 shrink-0" />
+              <span className="text-[10px] sm:text-xs mt-1 truncate">Bookings</span>
+            </NavLink>
           </>
         )}
-        <a href="/profile" className="flex flex-col items-center text-gray-500 hover:text-blue-600">
-          <User className="w-6 h-6" />
-          <span className="text-xs mt-1">Account</span>
-        </a>
+
+        <NavLink to="/profile" className={navLinkClass}>
+          <User className="w-6 h-6 shrink-0" />
+          <span className="text-[10px] sm:text-xs mt-1 truncate">Account</span>
+        </NavLink>
       </nav>
-      {/* Desktop Footer (unchanged) */}
+
+      {/* Desktop footer */}
       <footer className="bg-gray-900 text-white py-16 hidden md:block">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -41,7 +54,7 @@ const Footer = () => {
                 <span className="text-2xl font-bold">HomeEase</span>
               </div>
               <p className="text-gray-400 leading-relaxed">
-                Most trusted home services platform connecting you with verified 
+                Most trusted home services platform connecting you with verified
                 professionals for all your household needs.
               </p>
             </div>

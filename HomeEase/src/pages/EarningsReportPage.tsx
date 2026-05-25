@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { getProviderIdForUser } from '@/lib/providerCache';
+import { useRefreshInterval } from '@/hooks/useRefreshInterval';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,28 +15,11 @@ const EarningsReportPage = () => {
   const [totalEarnings, setTotalEarnings] = useState(0);
   const navigate = useNavigate();
 
-  const getProviderId = async () => {
-    if (!user?.id) return null;
-
-    const { data, error } = await supabase
-      .from('service_providers')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
-
-    return data?.id ?? null;
-  };
-
-  useEffect(() => {
-    const fetchEarnings = async () => {
-      if (!user) return;
+  const fetchEarnings = async () => {
+      if (!user?.id) return;
       setLoading(true);
       try {
-        const providerId = await getProviderId();
+        const providerId = await getProviderIdForUser(user.id);
         if (!providerId) {
           setCompletedJobs([]);
           setTotalEarnings(0);
@@ -73,13 +58,15 @@ const EarningsReportPage = () => {
       } finally {
         setLoading(false);
       }
-    };
+  };
 
-    fetchEarnings();
-    const intervalId = setInterval(fetchEarnings, 10000);
+  useEffect(() => {
+    if (user?.id) fetchEarnings();
+  }, [user?.id]);
 
-    return () => clearInterval(intervalId);
-  }, [user]);
+  useRefreshInterval(() => {
+    if (user?.id) fetchEarnings();
+  }, 30000);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-blue-200">

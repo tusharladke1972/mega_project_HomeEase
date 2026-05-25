@@ -5,7 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { getProviderIdForUser } from '@/lib/providerCache';
+import { useRefreshInterval } from '@/hooks/useRefreshInterval';
 import { Calendar, Clock, MapPin, Phone, User, MessageSquare } from 'lucide-react';
+import MaterialChargesEditor from '@/components/MaterialChargesEditor';
 
 interface Booking {
   id: string;
@@ -20,6 +23,7 @@ interface Booking {
   pincode: string;
   status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
   total_amount: number;
+  base_service_amount: number;
   customer_notes: string;
   provider_notes: string;
   created_at: string;
@@ -33,34 +37,10 @@ const BookingManagement = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user) return;
-
-    fetchBookings();
-    const intervalId = setInterval(fetchBookings, 10000);
-
-    return () => clearInterval(intervalId);
-  }, [user]);
-
-  const getProviderId = async () => {
-    if (!user?.id) return null;
-
-    const { data, error } = await supabase
-      .from('service_providers')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
-
-    return data?.id ?? null;
-  };
-
   const fetchBookings = async () => {
     try {
-      const providerId = await getProviderId();
+      if (!user?.id) return;
+      const providerId = await getProviderIdForUser(user.id);
       if (!providerId) {
         setBookings([]);
         return;
@@ -114,6 +94,7 @@ const BookingManagement = () => {
           pincode: b.pincode,
           status: b.status,
           total_amount: Number(b.total_amount || 0),
+          base_service_amount: Number(b.base_service_amount ?? b.total_amount ?? 0),
           customer_notes: b.customer_notes || '',
           provider_notes: b.provider_notes || '',
           created_at: b.created_at,
@@ -130,6 +111,14 @@ const BookingManagement = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user?.id) fetchBookings();
+  }, [user?.id]);
+
+  useRefreshInterval(() => {
+    if (user?.id) fetchBookings();
+  }, 30000);
 
   const updateBookingStatus = async (bookingId: string, newStatus: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled') => {
     try {
@@ -333,8 +322,31 @@ const BookingManagement = () => {
                       <span>{booking.address}, {booking.city} - {booking.pincode}</span>
                     </div>
 
+                    {booking.status === 'in_progress' && (
+                      <MaterialChargesEditor
+                        bookingId={booking.id}
+                        baseServiceAmount={booking.base_service_amount}
+                        onTotalChange={(newTotal) => {
+                          setBookings((prev) =>
+                            prev.map((b) =>
+                              b.id === booking.id ? { ...b, total_amount: newTotal } : b
+                            )
+                          );
+                        }}
+                      />
+                    )}
+
                     <div className="flex items-center justify-between pt-3">
-                      <span className="text-lg font-bold text-green-600">₹{booking.total_amount}</span>
+                      <div>
+                        <span className="text-lg font-bold text-green-600">
+                          ₹{booking.total_amount.toLocaleString('en-IN')}
+                        </span>
+                        {booking.total_amount > booking.base_service_amount && (
+                          <p className="text-xs text-gray-500">
+                            Base ₹{booking.base_service_amount.toLocaleString('en-IN')} + materials
+                          </p>
+                        )}
+                      </div>
                       <div className="flex gap-2">
                         {booking.status === 'confirmed' && (
                           <Button

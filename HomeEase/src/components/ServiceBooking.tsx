@@ -71,6 +71,7 @@ const ServiceBooking: React.FC<ServiceBookingProps> = ({ service, onClose }) => 
         pincode: data.pincode,
         customer_notes: data.customer_notes,
         total_amount: service.base_price,
+        base_service_amount: service.base_price,
         status: 'pending',
         description: service.name,
       };

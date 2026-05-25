@@ -2,6 +2,8 @@ import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import CustomerBookings from '@/components/CustomerBookings';
 import BookingManagement from '@/components/BookingManagement';
 
@@ -30,13 +32,17 @@ const BookingsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {profile.role === 'service_provider' ? (
-          <BookingManagement />
-        ) : (
-          <CustomerBookings onBack={handleBackToHome} />
-        )}
+      <Header />
+      <div className="pb-20 md:pb-0">
+        <div className="container mx-auto px-4 py-8">
+          {profile.role === 'service_provider' ? (
+            <BookingManagement />
+          ) : (
+            <CustomerBookings onBack={handleBackToHome} />
+          )}
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };
