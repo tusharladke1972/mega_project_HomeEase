@@ -13,6 +13,7 @@ import EarningsReportPage from "./pages/EarningsReportPage";
 
 const queryClient = new QueryClient();
 
+// updates
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
