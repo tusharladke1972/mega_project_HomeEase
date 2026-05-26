@@ -56,18 +56,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const ensureServiceProviderRecord = async (userId: string) => {
-    const { data, error } = await supabase
+    const { data: existingProviders, error } = await supabase
       .from('service_providers')
       .select('id')
       .eq('user_id', userId)
-      .maybeSingle();
+      .limit(1);
 
     if (error) {
       console.error('Error checking provider profile:', error);
       return;
     }
 
-    if (!data) {
+    if (!existingProviders || existingProviders.length === 0) {
       const { error: insertError } = await supabase.from('service_providers').insert({
         user_id: userId,
         business_name: '',
@@ -80,8 +80,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const ensureProfile = async (session: Session) => {
+    console.log("[AuthHook] starting ensureProfile for user:", session.user.id);
     const existingProfile = await fetchProfile(session.user.id);
+    console.log("[AuthHook] fetched existingProfile:", existingProfile);
+    const rawRole = session.user.user_metadata?.role as string | undefined;
+    console.log("[AuthHook] raw role in session user_metadata:", rawRole);
+    const normalizedRole =
+      rawRole === 'service_provider' || rawRole === 'admin' ? rawRole : 'customer';
+    console.log("[AuthHook] normalized role:", normalizedRole);
+
     if (existingProfile) {
+      // Self-heal: If trigger defaulted to customer, update database to correct role
+      if (existingProfile.role !== normalizedRole) {
+        console.log(`[AuthHook] Self-healing profile role mismatch: updating from ${existingProfile.role} to ${normalizedRole}`);
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ role: normalizedRole })
+          .eq('id', session.user.id);
+
+        if (!updateError) {
+          existingProfile.role = normalizedRole;
+        } else {
+          console.error('Error updating profile role:', updateError);
+        }
+      }
+
       setProfile(existingProfile);
       if (existingProfile.role === 'service_provider') {
         await ensureServiceProviderRecord(session.user.id);
@@ -91,9 +114,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const fullName = (session.user.user_metadata?.full_name as string) ?? '';
     const phone = (session.user.user_metadata?.phone as string) ?? null;
-    const rawRole = session.user.user_metadata?.role as string | undefined;
-    const normalizedRole =
-      rawRole === 'service_provider' || rawRole === 'admin' ? rawRole : 'customer';
 
     const { error } = await supabase.from('profiles').upsert(
       {
@@ -123,17 +143,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (session?.user) {
       setUser(session.user);
       setSession(session);
-
-      const existingProfile = await fetchProfile(session.user.id);
-      if (existingProfile) {
-        setProfile(existingProfile);
-        setLoading(false);
-        if (existingProfile.role === 'service_provider') {
-          void ensureServiceProviderRecord(session.user.id);
-        }
-        return;
-      }
-
       await ensureProfile(session);
     } else {
       setUser(null);

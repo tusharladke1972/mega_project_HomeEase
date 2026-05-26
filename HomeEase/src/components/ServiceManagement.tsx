@@ -69,34 +69,37 @@ const ServiceManagement = () => {
   const getOrCreateProviderId = async () => {
     if (!user?.id) return null;
 
-    const { data: existingProvider, error: providerError } = await supabase
+    const { data: existingProviders, error: providerError } = await supabase
       .from('service_providers')
       .select('id')
       .eq('user_id', user.id)
-      .maybeSingle();
+      .limit(1);
 
     if (providerError) {
       throw providerError;
     }
 
-    if (existingProvider?.id) {
-      return existingProvider.id;
+    if (existingProviders && existingProviders.length > 0) {
+      return existingProviders[0].id;
     }
 
-    const { data: createdProvider, error: createError } = await supabase
+    const { data: createdProviders, error: createError } = await supabase
       .from('service_providers')
       .insert({
         user_id: user.id,
         business_name: '',
       })
-      .select('id')
-      .single();
+      .select('id');
 
     if (createError) {
       throw createError;
     }
 
-    return createdProvider.id;
+    if (createdProviders && createdProviders.length > 0) {
+      return createdProviders[0].id;
+    }
+
+    return null;
   };
 
   const fetchServices = async () => {
@@ -215,44 +218,25 @@ const ServiceManagement = () => {
           fetchServices();
         }
       } else {
-        const { data: newService, error: newServiceError } = await supabase
-          .from('services')
-          .insert({
-            name: data.name,
-            description: data.description,
-            category: data.category as any,
-            base_price: data.base_price,
-            duration_minutes: data.duration_minutes,
-            is_active: true,
-          })
-          .select('id')
-          .single();
+        const { data: result, error: rpcError } = await supabase.rpc('add_provider_service', {
+          provider_user_id: user.id,
+          service_name: data.name,
+          service_description: data.description,
+          service_category: data.category,
+          service_base_price: data.base_price,
+          service_duration_minutes: data.duration_minutes,
+          custom_price: data.base_price,
+        });
 
-        if (newServiceError || !newService?.id) {
+        const res = typeof result === 'string' ? JSON.parse(result) : (result as any);
+
+        if (rpcError || (res && res.error)) {
           toast({
             title: "Error",
-            description: newServiceError?.message || "Failed to create service. Please try again.",
+            description: rpcError?.message || res?.error || "Failed to create service. Please try again.",
             variant: "destructive",
           });
         } else {
-          const { error: mappingError } = await (supabase as any)
-            .from('provider_services')
-            .insert({
-              provider_id: providerId,
-              service_id: newService.id,
-              custom_price: data.base_price,
-              is_active: true,
-            });
-
-          if (mappingError) {
-            toast({
-              title: "Error",
-              description: mappingError.message || "Failed to link service to provider.",
-              variant: "destructive",
-            });
-            return;
-          }
-
           toast({
             title: "Success",
             description: "Service added successfully!",
@@ -262,11 +246,11 @@ const ServiceManagement = () => {
           fetchServices();
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving service:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred.",
+        description: error?.message || (typeof error === 'object' ? JSON.stringify(error) : String(error)) || "An unexpected error occurred.",
         variant: "destructive",
       });
     }
@@ -295,15 +279,17 @@ const ServiceManagement = () => {
         return;
       }
 
-      const { error } = await (supabase as any)
-        .from('provider_services')
-        .delete()
-        .eq('id', service.provider_service_id);
+      const { data: result, error } = await supabase.rpc('delete_provider_service_by_id', {
+        provider_user_id: user.id,
+        provider_service_id: service.provider_service_id
+      });
 
-      if (error) {
+      const res = typeof result === 'string' ? JSON.parse(result) : (result as any);
+
+      if (error || (res && res.error)) {
         toast({
           title: "Error",
-          description: error.message || "Failed to delete service.",
+          description: error?.message || res?.error || "Failed to delete service.",
           variant: "destructive",
         });
       } else {
@@ -313,11 +299,11 @@ const ServiceManagement = () => {
         });
         fetchServices();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting service:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred.",
+        description: error?.message || (typeof error === 'object' ? JSON.stringify(error) : String(error)) || "An unexpected error occurred.",
         variant: "destructive",
       });
     }

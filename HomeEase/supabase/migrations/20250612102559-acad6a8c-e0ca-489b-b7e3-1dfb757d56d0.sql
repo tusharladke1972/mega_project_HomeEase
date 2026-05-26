@@ -203,12 +203,22 @@ INSERT INTO public.services (name, description, category, base_price, duration_m
 -- Create function to handle new user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_role public.user_role;
 BEGIN
-  INSERT INTO public.profiles (id, full_name, phone)
+  -- Extract and validate role from user metadata
+  BEGIN
+    v_role := COALESCE((NEW.raw_user_meta_data->>'role')::public.user_role, 'customer'::public.user_role);
+  EXCEPTION WHEN OTHERS THEN
+    v_role := 'customer'::public.user_role;
+  END;
+
+  INSERT INTO public.profiles (id, full_name, phone, role)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'phone', '')
+    COALESCE(NEW.raw_user_meta_data->>'phone', ''),
+    v_role
   );
   RETURN NEW;
 END;

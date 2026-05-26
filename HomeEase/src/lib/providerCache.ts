@@ -13,14 +13,14 @@ export async function getProviderIdForUser(userId: string): Promise<string | nul
     .from('service_providers')
     .select('id')
     .eq('user_id', userId)
-    .maybeSingle();
+    .limit(1);
 
   if (error) {
     throw error;
   }
 
   cachedUserId = userId;
-  cachedProviderId = data?.id ?? null;
+  cachedProviderId = data && data.length > 0 ? data[0].id : null;
   return cachedProviderId;
 }
 

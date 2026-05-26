@@ -193,17 +193,31 @@ const AuthPage = () => {
                     onValueChange={(value) => setSignUpData({ ...signUpData, role: value })}
                     className="flex flex-col space-y-2"
                   >
-                    <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                    <div 
+                      className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                        signUpData.role === 'customer' 
+                          ? 'border-blue-500 bg-blue-50/50 hover:bg-blue-50' 
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setSignUpData({ ...signUpData, role: 'customer' })}
+                    >
                       <RadioGroupItem value="customer" id="customer" />
-                      <User className="w-5 h-5 text-gray-600" />
+                      <User className={`w-5 h-5 ${signUpData.role === 'customer' ? 'text-blue-500' : 'text-gray-600'}`} />
                       <Label htmlFor="customer" className="flex-1 cursor-pointer">
                         <div className="font-medium">Customer</div>
                         <div className="text-sm text-gray-500">I need home services</div>
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                    <div 
+                      className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                        signUpData.role === 'service_provider' 
+                          ? 'border-blue-500 bg-blue-50/50 hover:bg-blue-50' 
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setSignUpData({ ...signUpData, role: 'service_provider' })}
+                    >
                       <RadioGroupItem value="service_provider" id="service_provider" />
-                      <Wrench className="w-5 h-5 text-gray-600" />
+                      <Wrench className={`w-5 h-5 ${signUpData.role === 'service_provider' ? 'text-blue-500' : 'text-gray-600'}`} />
                       <Label htmlFor="service_provider" className="flex-1 cursor-pointer">
                         <div className="font-medium">Service Provider</div>
                         <div className="text-sm text-gray-500">I provide home services</div>

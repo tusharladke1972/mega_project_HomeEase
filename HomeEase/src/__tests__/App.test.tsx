@@ -27,8 +27,19 @@ vi.mock('@supabase/supabase-js', () => ({
       select: () => {
         const query = {
           eq: () => query,
+          neq: () => query,
+          gt: () => query,
+          lt: () => query,
+          gte: () => query,
+          lte: () => query,
+          like: () => query,
+          ilike: () => query,
+          is: () => query,
+          in: () => query,
           order: () => query,
           limit: () => query,
+          single: () => Promise.resolve({ data: null, error: null }),
+          maybeSingle: () => Promise.resolve({ data: null, error: null }),
           then: (callback: any) => Promise.resolve({ data: [], error: null }).then(callback)
         }
         return query
@@ -36,6 +47,7 @@ vi.mock('@supabase/supabase-js', () => ({
       insert: () => Promise.resolve({ data: null, error: null }),
       update: () => Promise.resolve({ data: null, error: null }),
       delete: () => Promise.resolve({ data: null, error: null }),
+      upsert: () => Promise.resolve({ data: null, error: null }),
     }),
   }),
 }))
